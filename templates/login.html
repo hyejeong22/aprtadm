@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> Apartment · 관리자 로그인</title>
+    <!-- 외부 스타일 연결 -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <main class="auth-container">
+      <section class="auth-card">
+        <header class="auth-header">
+          <div class="auth-brand">
+            <span class="logo">V</span>
+             Apartment
+          </div>
+          <p class="auth-subtitle">관리자 전용 로그인</p>
+        </header>
+
+        <!-- 로그인 폼 -->
+        <form class="auth-form" method="POST" action="/login">
+          <div class="form-field">
+            <label for="username">아이디</label>
+            <div class="input-wrap">
+              <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="admin"
+                required
+              />
+              <span class="input-icon">👤</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="password">비밀번호</label>
+            <div class="input-wrap">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+              />
+              <span class="input-icon" onclick="togglePw()">👁️</span>
+            </div>
+            {% if error %}
+            <div class="form-error">{{ error }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-options">
+            <label
+              ><input type="checkbox" name="remember" /> 로그인 상태 유지</label
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary">로그인</button>
+
+          </p>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      function togglePw() {
+        const pw = document.getElementById('password')
+        pw.type = pw.type === 'password' ? 'text' : 'password'
+      }
+    </script>
+  </body>
+</html>
+=======
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> Apartment · 관리자 로그인</title>
+    <!-- 외부 스타일 연결 -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <main class="auth-container">
+      <section class="auth-card">
+        <header class="auth-header">
+          <div class="auth-brand">
+            <span class="logo">V</span>
+             Apartment
+          </div>
+          <p class="auth-subtitle">관리자 전용 로그인</p>
+        </header>
+
+        <!-- 로그인 폼 -->
+        <form class="auth-form" method="POST" action="/login">
+          <div class="form-field">
+            <label for="username">아이디</label>
+            <div class="input-wrap">
+              <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="admin"
+                required
+              />
+              <span class="input-icon">👤</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="password">비밀번호</label>
+            <div class="input-wrap">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+              />
+              <span class="input-icon" onclick="togglePw()">👁️</span>
+            </div>
+            {% if error %}
+            <div class="form-error">{{ error }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-options">
+            <label
+              ><input type="checkbox" name="remember" /> 로그인 상태 유지</label
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary">로그인</button>
+
+          </p>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      function togglePw() {
+        const pw = document.getElementById('password')
+        pw.type = pw.type === 'password' ? 'text' : 'password'
+      }
+    </script>
+  </body>
+</html>
+>>>>>>> 8da52f5 (Initial commit for V Apartment admin page)

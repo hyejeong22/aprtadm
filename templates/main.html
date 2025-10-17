@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>V Apartment Management Page</title>
+
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+  </head>
+  <body>
+    <div style="text-align: right; margin-bottom: 10px">
+      <a
+        href="/logout"
+        style="text-decoration: none; color: red; font-weight: bold"
+        >🔓</a
+      >
+    </div>
+
+    <div class="tabs">
+      <button onclick="showTab('entryTab')">출입기록</button>
+      <button onclick="showTab('registerTab')">등록 관리</button>
+
+    </div>
+
+    <div class="tab-content">
+      <div id="entryTab" class="tab active">
+        <h2>출입기록</h2>
+        <button id="btn-owner" class="active">세대주</button>
+        <button id="btn-visitor">방문자</button>
+        <h3 id="log-title">세대주 출입기록</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>날짜/시간</th>
+              <th>방문 동/호수</th>
+              <th>방문 목적</th>
+              <th>전화번호</th>
+            </tr>
+          </thead>
+          <tbody id="entryLogTable"></tbody>
+        </table>
+      </div>
+
+      <!-- 등록관리 -->
+      <div id="registerTab" class="tab">
+      <h2>등록 관리</h2>
+  <div class="tabs">
+    <button onclick="showRegisterSubTab('request')">등록 요청 목록</button>
+    <button onclick="showRegisterSubTab('resident')">등록 세대주 목록</button>
+  </div>
+
+  <!-- 등록 요청 영역 -->
+  <div id="registerRequestSection">
+    <h4>등록 요청 목록</h4>
+        {% for req in requests %}
+        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px">
+          <p><strong>주소:</strong> {{ req.unit_number }}</p>
+          <p><strong>전화번호:</strong> {{ req.phone }}</p>
+          <p>
+            <strong>사진:</strong><br />
+            <img
+              src="{{ url_for('static', filename=req.face_image_path) }}"
+              width="100"
+            />
+          </p>
+          <form
+            method="POST"
+            action="{{ url_for('approve_request', request_id=req.id) }}"
+            style="display: inline"
+          >
+            <button type="submit">✅ 승인</button>
+          </form>
+          <form
+            method="POST"
+            action="{{ url_for('reject_request', request_id=req.id) }}"
+            style="display: inline"
+          >
+            <button type="submit">❌ 거절</button>
+          </form>
+        </div>
+        {% else %}
+        <p>등록 요청이 없습니다.</p>
+        {% endfor %}
+</div>
+
+<div id="residentSection" style="display: none">
+        <h4>등록된 목록</h4>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="이름 또는 동/호수 검색..."
+          oninput="filterResidents()"
+          style="width: 300px; margin-bottom: 10px"
+        />
+        <div id="residentList"></div>
+        <div id="residentPagination" style="margin-top: 10px"></div>
+
+        <div id="editForm" style="display: none">
+          <form id="editResidentForm">
+            <input type="hidden" id="editId" name="id" />
+            <input type="text" id="editName" name="name" required />
+            <input type="text" id="editAddress" name="address" required />
+            <input type="text" id="editPhone" name="phone" required />
+            <input type="file" id="editPhoto" name="photo" />
+            <button type="submit">수정</button>
+            <button type="button" onclick="cancelEdit()">취소</button>
+          </form>
+        </div>
+      </div>
+
+    <script>let allResidents = []
+      let currentPage = 1
+      const perPage = 5
+      let totalPages = 1
+
+      function showTab(id) {
+        document
+          .querySelectorAll('.tab')
+          .forEach((t) => t.classList.remove('active'))
+        document.getElementById(id).classList.add('active')
+
+        if (id === 'registerTab') loadResidents()
+        if (id === 'entryTab') loadEntryLogs('세대주')
+      }
+
+      function loadEntryLogs(type) {
+        fetch(`/entry_logs?type=${type}`)
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById('log-title').innerText = `${type} 출입기록`
+            const tableBody = document.getElementById('entryLogTable')
+            tableBody.innerHTML = ''
+            if (data.length === 0) {
+              tableBody.innerHTML =
+                '<tr><td colspan="5">출입기록이 없습니다.</td></tr>'
+              return
+            }
+            data.forEach((log) => {
+              const row = document.createElement('tr')
+              row.innerHTML = `
+              <td>${new Date(log.datetime).toLocaleString()}</td>
+              <td>${log.address}</td>
+              <td>${log.purpose}</td>
+              <td>${log.name}</td>
+              <td>${log.phone}</td>
+            `
+              tableBody.appendChild(row)
+            })
+          })
+      }
+
+      function loadResidents(page = 1) {
+        fetch(`/residents?page=${page}`)
+          .then((res) => res.json())
+          .then((data) => {
+            allResidents = data.data
+            totalPages = data.total_pages
+            currentPage = page
+            const start = (currentPage - 1) * perPage
+            const end = start + perPage
+            displayResidents(allResidents.slice(start, end))
+            renderPagination()
+          })
+      }
+
+      function displayResidents(residents) {
+        const listDiv = document.getElementById('residentList')
+        listDiv.innerHTML = ''
+        if (residents.length === 0) {
+          listDiv.innerHTML = '<p>등록된 세대주가 없습니다.</p>'
+          return
+        }
+        residents.forEach((resident) => {
+          const item = document.createElement('div')
+          item.innerHTML = `
+          <img src="/static/${resident.photo_filename}" width="40" height="40" style="border-radius: 50%; vertical-align: middle" />
+          <strong>${resident.name}</strong> | ${resident.address} | ${resident.phone}
+          <button onclick="editResident(${resident.id})">수정</button>
+          <button onclick="deleteResident(${resident.id})">삭제</button>
+        `
+          listDiv.appendChild(item)
+        })
+      }
+
+      function renderPagination() {
+        const paginationDiv = document.getElementById('residentPagination')
+        paginationDiv.innerHTML = ''
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement('button')
+          btn.innerText = i
+          btn.disabled = i === currentPage
+          btn.onclick = () => loadResidents(i)
+          paginationDiv.appendChild(btn)
+        }
+      }
+
+      function filterResidents() {
+        const query = document
+          .getElementById('searchInput')
+          .value.trim()
+          .toLowerCase()
+        const filtered = allResidents.filter(
+          (r) =>
+            r.name.toLowerCase().includes(query) ||
+            r.address.toLowerCase().includes(query)
+        )
+        displayResidents(filtered)
+      }
+
+      function promptAdminPassword(callback) {
+        const password = prompt('관리자 비밀번호를 입력하세요:')
+        if (!password) return
+        fetch('/verify_password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        })
+          .then((res) => res.json())
+          .then((result) => {
+            if (result.status === 'success') callback(password)
+            else alert('❌ 비밀번호가 틀렸습니다.')
+          })
+      }
+
+      function editResident(id) {
+        promptAdminPassword(() => {
+          const resident = allResidents.find((r) => r.id === id)
+          if (!resident) return alert('세대주 정보를 찾을 수 없습니다.')
+          document.getElementById('editId').value = resident.id
+          document.getElementById('editName').value = resident.name
+          document.getElementById('editAddress').value = resident.address
+          document.getElementById('editPhone').value = resident.phone
+          document.getElementById('editForm').style.display = 'block'
+          window.scrollTo(0, document.getElementById('editForm').offsetTop)
+        })
+      }
+
+      function deleteResident(id) {
+        promptAdminPassword((password) => {
+          if (!confirm('정말 삭제하시겠습니까?')) return
+          fetch(`/residents/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+          })
+            .then((res) => {
+              if (res.ok) {
+                alert('✅ 삭제 완료')
+                loadResidents()
+              } else {
+                alert('❌ 삭제 실패')
+              }
+            })
+            .catch(() => alert('❌ 서버 오류'))
+        })
+      }
+
+      function cancelEdit() {
+        document.getElementById('editForm').style.display = 'none'
+      }
+
+  function showTab(id) {
+  document
+    .querySelectorAll('.tab')
+    .forEach((t) => t.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+
+  if (id === 'registerTab') {
+    showRegisterSubTab('request')  // 처음엔 등록 요청 보이게
+  }
+  if (id === 'entryTab') {
+    loadEntryLogs('세대주')
+  }
+if (id === 'qrTab') {
+  console.log('QR 탭 열림')
+  const iframe = document.querySelector('#qrTab iframe')
+  iframe.src = '/qr'  // 강제로 reload
+  iframe.style.height = '1000px' // 높이 보장
+}
+}
+
+      document
+        .getElementById('editResidentForm')
+        .addEventListener('submit', function (e) {
+          e.preventDefault()
+          const form = e.target
+          const formData = new FormData(form)
+          const id = formData.get('id')
+          fetch(`/residents/${id}`, {
+            method: 'PUT',
+            body: formData,
+          }).then((res) => {
+            if (res.ok) {
+              alert('✅ 수정 완료')
+              form.reset()
+              document.getElementById('editForm').style.display = 'none'
+              loadResidents()
+            } else {
+              alert('❌ 수정 실패')
+            }
+          })
+        })
+
+      document.getElementById('btn-owner').addEventListener('click', () => {
+        loadEntryLogs('세대주')
+        document.getElementById('btn-owner').classList.add('active')
+        document.getElementById('btn-visitor').classList.remove('active')
+      })
+
+      document.getElementById('btn-visitor').addEventListener('click', () => {
+        loadEntryLogs('방문자')
+        document.getElementById('btn-owner').classList.remove('active')
+        document.getElementById('btn-visitor').classList.add('active')
+      })
+
+      document.addEventListener('DOMContentLoaded', () => {
+        showTab('entryTab') // 기본 탭 표시
+      })
+
+  function showRegisterSubTab(tabName) {
+    const req = document.getElementById('registerRequestSection')
+    const res = document.getElementById('residentSection')
+
+    if (tabName === 'request') {
+      req.style.display = 'block'
+      res.style.display = 'none'
+    } else {
+      req.style.display = 'none'
+      res.style.display = 'block'
+      loadResidents()  // 주민 목록 불러오기
+   }
+  }</script>
+  </body>
+</html>

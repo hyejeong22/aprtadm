@@ -1,0 +1,4 @@
+Flask>=3.0
+gunicorn>=21.2
+mysql-connector-python
+# DB를 쓴다면 PyMySQL 대신 위 드라이버만 사용
